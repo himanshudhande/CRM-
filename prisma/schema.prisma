@@ -1,0 +1,297 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RecurrenceRule {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum ClientStatus {
+  ONBOARDING
+  ACTIVE
+  PAUSED
+  CHURNED
+}
+
+enum ContentPlatform {
+  INSTAGRAM
+  YOUTUBE
+  FACEBOOK
+  LINKEDIN
+  TWITTER
+  TIKTOK
+  OTHER
+}
+
+enum ContentType {
+  REEL
+  POST
+  CAROUSEL
+  STORY
+  LONG_FORM
+  SHORT
+  OTHER
+}
+
+enum ContentStage {
+  IDEA
+  SCRIPT
+  SHOOT_PLANNED
+  SHOOTING
+  EDITING
+  CLIENT_REVIEW
+  APPROVED
+  SCHEDULED
+  PUBLISHED
+}
+
+enum PortfolioVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum IncomeStatus {
+  PENDING
+  PAID
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects      Project[]
+  tasks         Task[]
+  clients       Client[]
+  contentItems  ContentItem[]
+  incomeEntries IncomeEntry[]
+  expenseEntries ExpenseEntry[]
+}
+
+model Client {
+  id                String       @id @default(cuid())
+  businessName      String
+  contactPerson     String?
+  phone             String?
+  email             String?
+  industry          String?
+  servicesPurchased String?
+  monthlyRetainer   Int?
+  contractStartDate DateTime?
+  renewalDate       DateTime?
+  status            ClientStatus @default(ONBOARDING)
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  projects       Project[]
+  communications ClientNote[]
+  documents      ClientDocument[]
+  contentItems   ContentItem[]
+  incomeEntries  IncomeEntry[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([renewalDate])
+}
+
+model ClientNote {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId String
+
+  @@index([clientId])
+}
+
+model ClientDocument {
+  id           String   @id @default(cuid())
+  fileName     String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  createdAt    DateTime @default(now())
+
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId String
+
+  @@index([clientId])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId String?
+
+  tasks         Task[]
+  incomeEntries IncomeEntry[]
+
+  @@index([ownerId])
+  @@index([clientId])
+}
+
+model Task {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus     @default(TODO)
+  priority    TaskPriority   @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  recurrenceRule RecurrenceRule @default(NONE)
+  recurrenceEndDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+
+  tags TaskTag[]
+
+  @@index([ownerId])
+  @@index([projectId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String?
+
+  tasks TaskTag[]
+}
+
+model TaskTag {
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId  String
+
+  @@id([taskId, tagId])
+}
+
+model ContentItem {
+  id                 String              @id @default(cuid())
+  title              String
+  platform           ContentPlatform
+  type               ContentType
+  stage              ContentStage        @default(IDEA)
+  stageUpdatedAt     DateTime            @default(now())
+  dueDate            DateTime?
+  scheduledDate      DateTime?
+  scriptUrl          String?
+  rawFootageUrl      String?
+  finalExportUrl     String?
+  notes              String?
+  isPortfolio        Boolean             @default(false)
+  portfolioVisibility PortfolioVisibility @default(PRIVATE)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId String?
+
+  @@index([ownerId])
+  @@index([clientId])
+  @@index([stage])
+  @@index([scheduledDate])
+}
+
+model IncomeEntry {
+  id           String       @id @default(cuid())
+  description  String?
+  amount       Int
+  expectedDate DateTime
+  receivedDate DateTime?
+  status       IncomeStatus @default(PENDING)
+  isRetainer   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId String?
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+
+  @@index([ownerId])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([expectedDate])
+  @@index([status])
+}
+
+model ExpenseEntry {
+  id        String   @id @default(cuid())
+  category  String
+  amount    Int
+  date      DateTime
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  @@index([ownerId])
+  @@index([date])
+}
