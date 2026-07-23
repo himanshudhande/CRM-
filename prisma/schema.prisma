@@ -42,6 +42,11 @@ enum ClientStatus {
   CHURNED
 }
 
+enum UserRole {
+  OWNER
+  STAFF
+}
+
 enum ContentPlatform {
   INSTAGRAM
   YOUTUBE
@@ -89,6 +94,7 @@ model User {
   email        String   @unique
   passwordHash String
   name         String?
+  role         UserRole @default(OWNER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

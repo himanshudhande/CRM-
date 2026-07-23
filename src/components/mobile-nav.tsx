@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ import {
   Wallet,
   Images,
   FileText,
+  Users,
   LogOut,
   Menu,
 } from "lucide-react";
@@ -39,7 +40,12 @@ const links = [
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
+  const visibleLinks =
+    session?.user?.role === "OWNER"
+      ? [...links, { href: "/team", label: "Team", icon: Users }]
+      : links;
 
   return (
     <div className="flex items-center justify-between border-b px-4 py-3 md:hidden">
@@ -57,7 +63,7 @@ export function MobileNav() {
             <SheetTitle className="text-left">Hexamad Digital</SheetTitle>
           </SheetHeader>
           <nav className="flex-1 space-y-1 px-2">
-            {links.map(({ href, label, icon: Icon }) => {
+            {visibleLinks.map(({ href, label, icon: Icon }) => {
               const active =
                 href === "/" ? pathname === "/" : pathname.startsWith(href);
               return (

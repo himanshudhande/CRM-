@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
   Wallet,
   Images,
   FileText,
+  Users,
   LogOut,
 } from "lucide-react";
 
@@ -30,6 +31,11 @@ const links = [
 
 export function NavSidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const visibleLinks =
+    session?.user?.role === "OWNER"
+      ? [...links, { href: "/team", label: "Team", icon: Users }]
+      : links;
 
   return (
     <div className="flex h-full w-56 flex-col border-r bg-muted/20">
@@ -40,7 +46,7 @@ export function NavSidebar() {
         <p className="text-xs text-muted-foreground">Ops Portal</p>
       </div>
       <nav className="flex-1 space-y-1 px-2">
-        {links.map(({ href, label, icon: Icon }) => {
+        {visibleLinks.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (

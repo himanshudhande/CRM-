@@ -1,3 +1,13 @@
+export type UserRole = "OWNER" | "STAFF";
+
+export interface TeamMember {
+  id: string;
+  name: string | null;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+}
+
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type RecurrenceRule = "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
