@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/current-user";
+import { requireOwner, requireUserId } from "@/lib/current-user";
 import { expenseEntryUpdateSchema } from "@/lib/validation";
 
 export async function PATCH(
@@ -8,6 +8,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireOwner();
     const userId = await requireUserId();
     const { id } = await params;
     const body = await req.json();
@@ -35,7 +36,10 @@ export async function PATCH(
     });
 
     return NextResponse.json(entry);
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
@@ -45,6 +49,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireOwner();
     const userId = await requireUserId();
     const { id } = await params;
 
@@ -57,7 +62,10 @@ export async function DELETE(
 
     await prisma.expenseEntry.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

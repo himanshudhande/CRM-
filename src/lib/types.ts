@@ -1,4 +1,8 @@
-export type UserRole = "OWNER" | "STAFF";
+export type UserRole =
+  | "OWNER"
+  | "STAFF"
+  | "SOCIAL_MEDIA_MANAGER"
+  | "TASK_STAFF";
 
 export interface TeamMember {
   id: string;
@@ -6,6 +10,15 @@ export interface TeamMember {
   email: string;
   role: UserRole;
   createdAt: string;
+}
+
+export interface AttendanceLog {
+  id: string;
+  checkInAt: string;
+  checkOutAt: string | null;
+  createdAt: string;
+  userId: string;
+  user?: { id: string; name: string | null; email: string };
 }
 
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";

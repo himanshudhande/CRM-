@@ -13,6 +13,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ROLE_LABELS } from "@/lib/permissions";
+
+type StaffRole = "SOCIAL_MEDIA_MANAGER" | "TASK_STAFF";
+
+const STAFF_ROLES: StaffRole[] = ["SOCIAL_MEDIA_MANAGER", "TASK_STAFF"];
+
+const ROLE_DESCRIPTIONS: Record<StaffRole, string> = {
+  SOCIAL_MEDIA_MANAGER:
+    "Sees tasks, projects, clients, content, reports, and portfolio. No access to finance.",
+  TASK_STAFF: "Sees only the dashboard and tasks assigned to them.",
+};
 
 export function StaffFormDialog({
   open,
@@ -26,6 +44,7 @@ export function StaffFormDialog({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<StaffRole>("SOCIAL_MEDIA_MANAGER");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -33,6 +52,7 @@ export function StaffFormDialog({
     setName("");
     setEmail("");
     setPassword("");
+    setRole("SOCIAL_MEDIA_MANAGER");
   }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -45,6 +65,7 @@ export function StaffFormDialog({
         name: name.trim(),
         email: email.trim(),
         password,
+        role,
       });
       toast.success("Staff account created");
       onSaved();
@@ -96,8 +117,29 @@ export function StaffFormDialog({
               minLength={8}
             />
             <p className="text-xs text-muted-foreground">
-              At least 8 characters. They&apos;ll see the same tasks, clients,
-              content, and finance data as you.
+              At least 8 characters.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Role</Label>
+            <Select
+              value={role}
+              onValueChange={(v) => setRole((v ?? "SOCIAL_MEDIA_MANAGER") as StaffRole)}
+            >
+              <SelectTrigger>
+                <SelectValue>{(v: StaffRole) => ROLE_LABELS[v]}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {STAFF_ROLES.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {ROLE_DESCRIPTIONS[role]}
             </p>
           </div>
 

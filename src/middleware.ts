@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/auth.config";
+import { canAccessModule, moduleForPath } from "@/lib/permissions";
 
 const { auth } = NextAuth(authConfig);
 
@@ -23,6 +24,14 @@ export default auth((req) => {
 
   if (isLoggedIn && isLoginPage) {
     return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+  }
+
+  if (isLoggedIn && !isPublicPath) {
+    const role = req.auth!.user.role;
+    const module = moduleForPath(pathname);
+    if (module && !canAccessModule(role, module)) {
+      return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+    }
   }
 
   return NextResponse.next();

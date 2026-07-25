@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         name: parsed.data.name,
         email: parsed.data.email,
         passwordHash,
-        role: "STAFF",
+        role: parsed.data.role,
       },
       select: { id: true, name: true, email: true, role: true, createdAt: true },
     });

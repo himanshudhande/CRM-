@@ -45,6 +45,8 @@ enum ClientStatus {
 enum UserRole {
   OWNER
   STAFF
+  SOCIAL_MEDIA_MANAGER
+  TASK_STAFF
 }
 
 enum ContentPlatform {
@@ -104,6 +106,7 @@ model User {
   contentItems  ContentItem[]
   incomeEntries IncomeEntry[]
   expenseEntries ExpenseEntry[]
+  attendanceLogs AttendanceLog[]
 }
 
 model Client {
@@ -300,4 +303,17 @@ model ExpenseEntry {
 
   @@index([ownerId])
   @@index([date])
+}
+
+model AttendanceLog {
+  id         String    @id @default(cuid())
+  checkInAt  DateTime  @default(now())
+  checkOutAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId])
+  @@index([checkInAt])
 }

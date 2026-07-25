@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { canAccessModule, type Module } from "@/lib/permissions";
+import { AttendanceWidget } from "@/components/attendance/attendance-widget";
 import {
   LayoutDashboard,
   ListTodo,
@@ -18,24 +20,30 @@ import {
   LogOut,
 } from "lucide-react";
 
-const links = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/tasks", label: "Tasks", icon: ListTodo },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/clients", label: "Clients", icon: Building2 },
-  { href: "/content", label: "Content", icon: Clapperboard },
-  { href: "/finance", label: "Finance", icon: Wallet },
-  { href: "/reports", label: "Reports", icon: FileText },
-  { href: "/portfolio", label: "Portfolio", icon: Images },
+const links: {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  module: Module;
+}[] = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
+  { href: "/tasks", label: "Tasks", icon: ListTodo, module: "tasks" },
+  { href: "/projects", label: "Projects", icon: FolderKanban, module: "projects" },
+  { href: "/clients", label: "Clients", icon: Building2, module: "clients" },
+  { href: "/content", label: "Content", icon: Clapperboard, module: "content" },
+  { href: "/finance", label: "Finance", icon: Wallet, module: "finance" },
+  { href: "/reports", label: "Reports", icon: FileText, module: "reports" },
+  { href: "/portfolio", label: "Portfolio", icon: Images, module: "portfolio" },
+  { href: "/team", label: "Team", icon: Users, module: "team" },
 ];
 
 export function NavSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const visibleLinks =
-    session?.user?.role === "OWNER"
-      ? [...links, { href: "/team", label: "Team", icon: Users }]
-      : links;
+  const role = session?.user?.role;
+  const visibleLinks = role
+    ? links.filter((link) => canAccessModule(role, link.module))
+    : [];
 
   return (
     <div className="flex h-full w-56 flex-col border-r bg-muted/20">
@@ -66,7 +74,8 @@ export function NavSidebar() {
           );
         })}
       </nav>
-      <div className="p-2">
+      <div className="space-y-2 border-t p-2">
+        <AttendanceWidget />
         <Button
           variant="ghost"
           size="sm"

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/current-user";
+import { requireOwner, requireUserId } from "@/lib/current-user";
 import { incomeEntryInputSchema } from "@/lib/validation";
 
 export async function GET() {
   try {
+    await requireOwner();
     const userId = await requireUserId();
 
     const entries = await prisma.incomeEntry.findMany({
@@ -14,13 +15,17 @@ export async function GET() {
     });
 
     return NextResponse.json(entries);
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    await requireOwner();
     const userId = await requireUserId();
     const body = await req.json();
     const parsed = incomeEntryInputSchema.safeParse(body);
@@ -45,7 +50,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(entry, { status: 201 });
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import type { UserRole } from "@/lib/types";
 
 export const authConfig = {
   trustHost: true,
@@ -16,7 +17,7 @@ export const authConfig = {
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as "OWNER" | "STAFF";
+        session.user.role = token.role as UserRole;
       }
       return session;
     },

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { startOfMonth, endOfMonth } from "date-fns";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/current-user";
+import { requireOwner, requireUserId } from "@/lib/current-user";
 
 export async function POST() {
   try {
+    await requireOwner();
     const userId = await requireUserId();
 
     const monthStart = startOfMonth(new Date());
@@ -45,7 +46,10 @@ export async function POST() {
     }
 
     return NextResponse.json({ created });
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

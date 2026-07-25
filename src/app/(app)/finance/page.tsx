@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval } from "date-fns";
@@ -27,12 +28,15 @@ import { ExpenseFormDialog } from "@/components/finance/expense-form-dialog";
 import { ChevronLeft, ChevronRight, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 
 export default function FinancePage() {
+  const { data: session } = useSession();
+  const isOwner = session?.user?.role === "OWNER";
+
   const { data: income, mutate: mutateIncome } = useSWR<IncomeEntry[]>(
-    "/api/income",
+    isOwner ? "/api/income" : null,
     fetcher
   );
   const { data: expenses, mutate: mutateExpenses } = useSWR<ExpenseEntry[]>(
-    "/api/expenses",
+    isOwner ? "/api/expenses" : null,
     fetcher
   );
 
@@ -129,6 +133,14 @@ export default function FinancePage() {
     } catch {
       toast.error("Failed to delete expense");
     }
+  }
+
+  if (session && !isOwner) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Only the account owner can view finance data.
+      </p>
+    );
   }
 
   return (
