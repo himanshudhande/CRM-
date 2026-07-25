@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { toast } from "sonner";
@@ -48,6 +48,13 @@ export default function FinancePage() {
     null
   );
   const [generating, setGenerating] = useState(false);
+  const [selectedIncomeIds, setSelectedIncomeIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [bulkWorking, setBulkWorking] = useState(false);
 
   const monthInterval = useMemo(
     () => ({ start: startOfMonth(month), end: endOfMonth(month) }),
@@ -69,6 +76,11 @@ export default function FinancePage() {
       ),
     [expenses, monthInterval]
   );
+
+  useEffect(() => {
+    setSelectedIncomeIds(new Set());
+    setSelectedExpenseIds(new Set());
+  }, [month]);
 
   const totalExpected = monthIncome.reduce((sum, e) => sum + e.amount, 0);
   const totalReceived = (income ?? [])
@@ -132,6 +144,101 @@ export default function FinancePage() {
       mutateExpenses();
     } catch {
       toast.error("Failed to delete expense");
+    }
+  }
+
+  function toggleIncomeSelected(id: string) {
+    setSelectedIncomeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleExpenseSelected(id: string) {
+    setSelectedExpenseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllIncomeSelected() {
+    setSelectedIncomeIds((prev) =>
+      prev.size === monthIncome.length
+        ? new Set()
+        : new Set(monthIncome.map((e) => e.id))
+    );
+  }
+
+  function toggleAllExpensesSelected() {
+    setSelectedExpenseIds((prev) =>
+      prev.size === monthExpenses.length
+        ? new Set()
+        : new Set(monthExpenses.map((e) => e.id))
+    );
+  }
+
+  async function handleBulkDeleteIncome() {
+    setBulkWorking(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIncomeIds).map((id) =>
+          apiRequest(`/api/income/${id}`, "DELETE")
+        )
+      );
+      toast.success(`${selectedIncomeIds.size} income entries deleted`);
+      setSelectedIncomeIds(new Set());
+      mutateIncome();
+    } catch {
+      toast.error("Failed to delete some income entries");
+    } finally {
+      setBulkWorking(false);
+    }
+  }
+
+  async function handleBulkDeleteExpenses() {
+    setBulkWorking(true);
+    try {
+      await Promise.all(
+        Array.from(selectedExpenseIds).map((id) =>
+          apiRequest(`/api/expenses/${id}`, "DELETE")
+        )
+      );
+      toast.success(`${selectedExpenseIds.size} expenses deleted`);
+      setSelectedExpenseIds(new Set());
+      mutateExpenses();
+    } catch {
+      toast.error("Failed to delete some expenses");
+    } finally {
+      setBulkWorking(false);
+    }
+  }
+
+  async function handleBulkMarkIncome(status: "PAID" | "PENDING") {
+    setBulkWorking(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIncomeIds).map((id) =>
+          apiRequest(`/api/income/${id}`, "PATCH", {
+            status,
+            receivedDate: status === "PAID" ? new Date().toISOString() : null,
+          })
+        )
+      );
+      toast.success(
+        `${selectedIncomeIds.size} income entries marked as ${
+          status === "PAID" ? "paid" : "pending"
+        }`
+      );
+      setSelectedIncomeIds(new Set());
+      mutateIncome();
+    } catch {
+      toast.error("Failed to update some income entries");
+    } finally {
+      setBulkWorking(false);
     }
   }
 
@@ -203,6 +310,40 @@ export default function FinancePage() {
           </Button>
         </div>
 
+        {selectedIncomeIds.size > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
+            <span className="text-sm font-medium">
+              {selectedIncomeIds.size} selected
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={bulkWorking}
+              onClick={() => handleBulkMarkIncome("PAID")}
+            >
+              Mark as paid
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={bulkWorking}
+              onClick={() => handleBulkMarkIncome("PENDING")}
+            >
+              Mark as pending
+            </Button>
+            <ConfirmDelete
+              title="Delete selected income entries?"
+              description={`This will permanently delete ${selectedIncomeIds.size} income entries.`}
+              onConfirm={handleBulkDeleteIncome}
+            >
+              <Button variant="destructive" size="sm" disabled={bulkWorking}>
+                <Trash2 className="size-4" />
+                Delete selected
+              </Button>
+            </ConfirmDelete>
+          </div>
+        )}
+
         {monthIncome.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             No income entries for this month.
@@ -212,7 +353,16 @@ export default function FinancePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={
+                        monthIncome.length > 0 &&
+                        selectedIncomeIds.size === monthIncome.length
+                      }
+                      onCheckedChange={toggleAllIncomeSelected}
+                    />
+                  </TableHead>
+                  <TableHead className="w-10">Paid</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Client / Project</TableHead>
                   <TableHead>Amount</TableHead>
@@ -225,6 +375,12 @@ export default function FinancePage() {
               <TableBody>
                 {monthIncome.map((entry) => (
                   <TableRow key={entry.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIncomeIds.has(entry.id)}
+                        onCheckedChange={() => toggleIncomeSelected(entry.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Checkbox
                         checked={entry.status === "PAID"}
@@ -287,6 +443,24 @@ export default function FinancePage() {
           </Button>
         </div>
 
+        {selectedExpenseIds.size > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
+            <span className="text-sm font-medium">
+              {selectedExpenseIds.size} selected
+            </span>
+            <ConfirmDelete
+              title="Delete selected expenses?"
+              description={`This will permanently delete ${selectedExpenseIds.size} expense entries.`}
+              onConfirm={handleBulkDeleteExpenses}
+            >
+              <Button variant="destructive" size="sm" disabled={bulkWorking}>
+                <Trash2 className="size-4" />
+                Delete selected
+              </Button>
+            </ConfirmDelete>
+          </div>
+        )}
+
         {monthExpenses.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             No expenses for this month.
@@ -296,6 +470,15 @@ export default function FinancePage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={
+                        monthExpenses.length > 0 &&
+                        selectedExpenseIds.size === monthExpenses.length
+                      }
+                      onCheckedChange={toggleAllExpensesSelected}
+                    />
+                  </TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Date</TableHead>
@@ -306,6 +489,12 @@ export default function FinancePage() {
               <TableBody>
                 {monthExpenses.map((entry) => (
                   <TableRow key={entry.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedExpenseIds.has(entry.id)}
+                        onCheckedChange={() => toggleExpenseSelected(entry.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {entry.category}
                     </TableCell>
