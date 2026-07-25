@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { Client, Project } from "@/lib/types";
@@ -14,6 +15,8 @@ import { ClientStatusBadge } from "@/components/clients/client-status-badge";
 import { ClientFormDialog } from "@/components/clients/client-form-dialog";
 import { ClientNotes } from "@/components/clients/client-notes";
 import { ClientDocuments } from "@/components/clients/client-documents";
+import { ClientContentTab } from "@/components/clients/client-content-tab";
+import { ClientPaymentsTab } from "@/components/clients/client-payments-tab";
 import { ArrowLeft, Pencil } from "lucide-react";
 
 export default function ClientDetailPage({
@@ -22,12 +25,14 @@ export default function ClientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { data: session } = useSession();
   const { data: client, mutate, isLoading } = useSWR<Client>(
     `/api/clients/${id}`,
     fetcher
   );
   const { data: projects } = useSWR<Project[]>("/api/projects", fetcher);
   const [editing, setEditing] = useState(false);
+  const isOwner = session?.user?.role === "OWNER";
 
   const clientProjects = projects?.filter((p) => p.clientId === id) ?? [];
 
@@ -105,14 +110,26 @@ export default function ClientDetailPage({
         )}
       </Card>
 
-      <Tabs defaultValue="log">
+      <Tabs defaultValue="content">
         <TabsList>
+          <TabsTrigger value="content">Content</TabsTrigger>
+          {isOwner && <TabsTrigger value="payments">Payments</TabsTrigger>}
           <TabsTrigger value="log">Communication log</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="projects">
             Projects ({clientProjects.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="content" className="pt-4">
+          <ClientContentTab clientId={id} />
+        </TabsContent>
+
+        {isOwner && (
+          <TabsContent value="payments" className="pt-4">
+            <ClientPaymentsTab clientId={id} />
+          </TabsContent>
+        )}
 
         <TabsContent value="log" className="pt-4">
           <ClientNotes clientId={id} />

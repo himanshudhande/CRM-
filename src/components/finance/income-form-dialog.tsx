@@ -38,11 +38,13 @@ export function IncomeFormDialog({
   onOpenChange,
   entry,
   onSaved,
+  defaultClientId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry?: IncomeEntry | null;
   onSaved: () => void;
+  defaultClientId?: string;
 }) {
   const { data: clients } = useSWR<Client[]>("/api/clients", fetcher);
   const { data: projects } = useSWR<Project[]>("/api/projects", fetcher);
@@ -72,10 +74,10 @@ export function IncomeFormDialog({
       setExpectedDate(new Date().toISOString().slice(0, 10));
       setReceivedDate("");
       setStatus("PENDING");
-      setClientId(NO_CLIENT);
+      setClientId(defaultClientId ?? NO_CLIENT);
       setProjectId(NO_PROJECT);
     }
-  }, [open, entry]);
+  }, [open, entry, defaultClientId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
