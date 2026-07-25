@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { fetcher, apiRequest } from "@/lib/fetcher";
@@ -37,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { TagPicker } from "@/components/tasks/tag-picker";
 import { TaskComments } from "@/components/tasks/task-comments";
-import { ROLE_LABELS } from "@/lib/permissions";
+import { ROLE_LABELS, isManagementRole } from "@/lib/permissions";
 import type { TeamMemberOption } from "@/lib/types";
 
 interface TaskFormDialogProps {
@@ -60,6 +61,10 @@ export function TaskFormDialog({
   defaultStatus,
   onSaved,
 }: TaskFormDialogProps) {
+  const { data: session } = useSession();
+  const canAssign = session?.user?.role
+    ? isManagementRole(session.user.role)
+    : false;
   const { data: projects } = useSWR<Project[]>("/api/projects", fetcher);
   const { data: teamMembers } = useSWR<TeamMemberOption[]>(
     "/api/team/members",
@@ -270,33 +275,41 @@ export function TaskFormDialog({
 
           <div className="space-y-2">
             <Label>Assigned to</Label>
-            <Select
-              value={assigneeId}
-              onValueChange={(v) => setAssigneeId(v ?? NO_ASSIGNEE)}
-            >
-              <SelectTrigger>
-                <SelectValue>
-                  {(v: string) =>
-                    v === NO_ASSIGNEE
-                      ? "Unassigned"
-                      : (() => {
-                          const m = teamMembers?.find((tm) => tm.id === v);
-                          return m
-                            ? `${m.name ?? m.email} (${ROLE_LABELS[m.role]})`
-                            : v;
-                        })()
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_ASSIGNEE}>Unassigned</SelectItem>
-                {teamMembers?.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name ?? m.email} ({ROLE_LABELS[m.role]})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {canAssign ? (
+              <Select
+                value={assigneeId}
+                onValueChange={(v) => setAssigneeId(v ?? NO_ASSIGNEE)}
+              >
+                <SelectTrigger>
+                  <SelectValue>
+                    {(v: string) =>
+                      v === NO_ASSIGNEE
+                        ? "Unassigned"
+                        : (() => {
+                            const m = teamMembers?.find((tm) => tm.id === v);
+                            return m
+                              ? `${m.name ?? m.email} (${ROLE_LABELS[m.role]})`
+                              : v;
+                          })()
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_ASSIGNEE}>Unassigned</SelectItem>
+                  {teamMembers?.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name ?? m.email} ({ROLE_LABELS[m.role]})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                {task
+                  ? (task.assignee?.name ?? task.assignee?.email ?? "You")
+                  : "You (only managers can reassign tasks)"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

@@ -55,6 +55,16 @@ export function moduleForPath(pathname: string): Module | null {
   return match ? match[0] : null;
 }
 
+export const MANAGEMENT_ROLES: UserRole[] = [
+  "OWNER",
+  "OPS_MANAGER",
+  "SOCIAL_MEDIA_MANAGER",
+];
+
+export function isManagementRole(role: UserRole): boolean {
+  return MANAGEMENT_ROLES.includes(role);
+}
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   OWNER: "Owner",
   STAFF: "Staff",

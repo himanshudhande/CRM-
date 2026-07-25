@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/current-user";
+import { requireSession, requireUserId } from "@/lib/current-user";
+import { isManagementRole } from "@/lib/permissions";
 import { taskUpdateSchema } from "@/lib/validation";
 
 export async function PATCH(
@@ -8,7 +9,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await requireSession();
     const userId = await requireUserId();
+    const isManagement = isManagementRole(session.user.role);
     const { id } = await params;
     const body = await req.json();
     const parsed = taskUpdateSchema.safeParse(body);
@@ -27,13 +30,18 @@ export async function PATCH(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const { tagIds, dueDate, recurrenceEndDate, status, ...rest } =
+    if (!isManagement && existing.assigneeId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { tagIds, dueDate, recurrenceEndDate, status, assigneeId, ...rest } =
       parsed.data;
 
     const task = await prisma.task.update({
       where: { id },
       data: {
         ...rest,
+        ...(isManagement && assigneeId !== undefined ? { assigneeId } : {}),
         ...(status !== undefined
           ? {
               status,
@@ -70,7 +78,10 @@ export async function PATCH(
     });
 
     return NextResponse.json(task);
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
@@ -80,7 +91,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await requireSession();
     const userId = await requireUserId();
+    const isManagement = isManagementRole(session.user.role);
     const { id } = await params;
 
     const existing = await prisma.task.findFirst({
@@ -88,6 +101,10 @@ export async function DELETE(
     });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (!isManagement && existing.assigneeId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await prisma.task.delete({ where: { id } });

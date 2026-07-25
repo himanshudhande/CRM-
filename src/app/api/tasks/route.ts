@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/current-user";
+import { requireSession, requireUserId } from "@/lib/current-user";
+import { isManagementRole } from "@/lib/permissions";
 import { taskInputSchema } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await requireSession();
     const userId = await requireUserId();
     const projectId = req.nextUrl.searchParams.get("projectId");
+    const isManagement = isManagementRole(session.user.role);
 
     const tasks = await prisma.task.findMany({
       where: {
         ownerId: userId,
         ...(projectId ? { projectId } : {}),
+        ...(isManagement ? {} : { assigneeId: session.user.id }),
       },
       include: {
         project: true,
@@ -29,7 +33,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await requireSession();
     const userId = await requireUserId();
+    const isManagement = isManagementRole(session.user.role);
     const body = await req.json();
     const parsed = taskInputSchema.safeParse(body);
 
@@ -40,7 +46,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { tagIds, dueDate, recurrenceEndDate, ...rest } = parsed.data;
+    const { tagIds, dueDate, recurrenceEndDate, assigneeId, ...rest } =
+      parsed.data;
 
     const task = await prisma.task.create({
       data: {
@@ -49,6 +56,7 @@ export async function POST(req: NextRequest) {
         recurrenceEndDate: recurrenceEndDate
           ? new Date(recurrenceEndDate)
           : null,
+        assigneeId: isManagement ? (assigneeId ?? null) : session.user.id,
         ownerId: userId,
         tags: {
           create: tagIds.map((tagId) => ({ tagId })),
