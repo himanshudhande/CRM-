@@ -38,14 +38,14 @@ const MODULE_PATHS: Record<Module, string> = {
   team: "/team",
 };
 
-export function canAccessModule(role: UserRole, module: Module): boolean {
-  return MODULE_ACCESS[module].includes(role);
+export function canAccessModule(role: UserRole, mod: Module): boolean {
+  return MODULE_ACCESS[mod].includes(role);
 }
 
 export function moduleForPath(pathname: string): Module | null {
   if (pathname === "/") return "dashboard";
   const match = (Object.entries(MODULE_PATHS) as [Module, string][]).find(
-    ([module, path]) => path !== "/" && pathname.startsWith(path)
+    ([, path]) => path !== "/" && pathname.startsWith(path)
   );
   return match ? match[0] : null;
 }

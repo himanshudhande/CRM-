@@ -28,8 +28,8 @@ export default auth((req) => {
 
   if (isLoggedIn && !isPublicPath) {
     const role = req.auth!.user.role;
-    const module = moduleForPath(pathname);
-    if (module && !canAccessModule(role, module)) {
+    const mod = moduleForPath(pathname);
+    if (mod && !canAccessModule(role, mod)) {
       return NextResponse.redirect(new URL("/", req.nextUrl.origin));
     }
   }
