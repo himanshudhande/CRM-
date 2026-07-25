@@ -25,6 +25,45 @@ export interface AttendanceLog {
   user?: { id: string; name: string | null; email: string };
 }
 
+export type LeadStatus =
+  | "NEW"
+  | "CONTACTED"
+  | "FOLLOW_UP"
+  | "MEETING_SCHEDULED"
+  | "WON"
+  | "LOST";
+
+export interface Lead {
+  id: string;
+  name: string;
+  value: number | null;
+  probability: number | null;
+  phone: string | null;
+  notes: string | null;
+  followUpDate: string | null;
+  status: LeadStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+  NEW: "New",
+  CONTACTED: "Contacted",
+  FOLLOW_UP: "Follow-up",
+  MEETING_SCHEDULED: "Meeting scheduled",
+  WON: "Won",
+  LOST: "Lost",
+};
+
+export const LEAD_STATUSES: LeadStatus[] = [
+  "NEW",
+  "CONTACTED",
+  "FOLLOW_UP",
+  "MEETING_SCHEDULED",
+  "WON",
+  "LOST",
+];
+
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type RecurrenceRule = "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";

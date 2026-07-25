@@ -154,6 +154,27 @@ export const expenseEntryInputSchema = z.object({
 
 export const expenseEntryUpdateSchema = expenseEntryInputSchema.partial();
 
+export const leadStatusValues = [
+  "NEW",
+  "CONTACTED",
+  "FOLLOW_UP",
+  "MEETING_SCHEDULED",
+  "WON",
+  "LOST",
+] as const;
+
+export const leadInputSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  value: z.number().int().nonnegative().optional().nullable(),
+  probability: z.number().int().min(0).max(100).optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
+  notes: z.string().max(5000).optional().nullable(),
+  followUpDate: z.string().datetime().optional().nullable(),
+  status: z.enum(leadStatusValues).default("NEW"),
+});
+
+export const leadUpdateSchema = leadInputSchema.partial();
+
 export const staffRoleValues = [
   "SOCIAL_MEDIA_MANAGER",
   "TASK_STAFF",

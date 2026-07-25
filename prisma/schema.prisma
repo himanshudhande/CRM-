@@ -95,6 +95,15 @@ enum IncomeStatus {
   PAID
 }
 
+enum LeadStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  MEETING_SCHEDULED
+  WON
+  LOST
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -109,6 +118,7 @@ model User {
   clients       Client[]
   contentItems  ContentItem[]
   incomeEntries IncomeEntry[]
+  leads         Lead[]
   expenseEntries ExpenseEntry[]
   attendanceLogs AttendanceLog[]
 }
@@ -320,4 +330,24 @@ model AttendanceLog {
 
   @@index([userId])
   @@index([checkInAt])
+}
+
+model Lead {
+  id           String     @id @default(cuid())
+  name         String
+  value        Int?
+  probability  Int?
+  phone        String?
+  notes        String?
+  followUpDate DateTime?
+  status       LeadStatus @default(NEW)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([followUpDate])
 }
