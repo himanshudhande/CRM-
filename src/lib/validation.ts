@@ -23,10 +23,15 @@ export const taskInputSchema = z.object({
   recurrenceRule: z.enum(recurrenceRuleValues).default("NONE"),
   recurrenceEndDate: z.string().datetime().optional().nullable(),
   projectId: z.string().optional().nullable(),
+  assigneeId: z.string().optional().nullable(),
   tagIds: z.array(z.string()).optional().default([]),
 });
 
 export const taskUpdateSchema = taskInputSchema.partial();
+
+export const taskCommentInputSchema = z.object({
+  body: z.string().min(1, "Comment can't be empty").max(2000),
+});
 
 export const projectInputSchema = z.object({
   name: z.string().min(1, "Name is required").max(200),

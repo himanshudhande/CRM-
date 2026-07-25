@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { PriorityBadge } from "@/components/tasks/priority-badge";
 import { formatDate, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { User } from "lucide-react";
 
 export function TaskCard({
   task,
@@ -55,6 +56,12 @@ export function TaskCard({
         {task.project && (
           <p className="truncate text-xs text-muted-foreground">
             {task.project.name}
+          </p>
+        )}
+        {task.assignee && (
+          <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+            <User className="size-3" />
+            {task.assignee.name ?? task.assignee.email}
           </p>
         )}
         {task.tags.length > 0 && (

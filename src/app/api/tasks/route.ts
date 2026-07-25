@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
       },
       include: {
         project: true,
+        assignee: { select: { id: true, name: true, email: true, role: true } },
         tags: { include: { tag: true } },
       },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
@@ -53,7 +54,11 @@ export async function POST(req: NextRequest) {
           create: tagIds.map((tagId) => ({ tagId })),
         },
       },
-      include: { project: true, tags: { include: { tag: true } } },
+      include: {
+        project: true,
+        assignee: { select: { id: true, name: true, email: true, role: true } },
+        tags: { include: { tag: true } },
+      },
     });
 
     return NextResponse.json(task, { status: 201 });

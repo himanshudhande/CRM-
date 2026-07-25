@@ -198,6 +198,13 @@ export interface ExpenseEntry {
   updatedAt: string;
 }
 
+export interface TeamMemberOption {
+  id: string;
+  name: string | null;
+  email: string;
+  role: UserRole;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -212,7 +219,18 @@ export interface Task {
   updatedAt: string;
   projectId: string | null;
   project: Project | null;
+  assigneeId: string | null;
+  assignee: TeamMemberOption | null;
   tags: { tag: Tag }[];
+}
+
+export interface TaskComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  taskId: string;
+  authorId: string;
+  author: TeamMemberOption;
 }
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {

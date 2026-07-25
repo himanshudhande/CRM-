@@ -62,7 +62,11 @@ export async function PATCH(
             }
           : {}),
       },
-      include: { project: true, tags: { include: { tag: true } } },
+      include: {
+        project: true,
+        assignee: { select: { id: true, name: true, email: true, role: true } },
+        tags: { include: { tag: true } },
+      },
     });
 
     return NextResponse.json(task);

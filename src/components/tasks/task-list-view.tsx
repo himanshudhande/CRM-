@@ -71,6 +71,7 @@ export function TaskListView({
             <TableHead>Status</TableHead>
             <TableHead>Priority</TableHead>
             <TableHead>Due date</TableHead>
+            <TableHead>Assigned to</TableHead>
             <TableHead>Tags</TableHead>
             <TableHead className="w-20" />
           </TableRow>
@@ -112,6 +113,9 @@ export function TaskListView({
                 )}
               >
                 {formatDate(task.dueDate) || "—"}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {task.assignee?.name ?? task.assignee?.email ?? "—"}
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">

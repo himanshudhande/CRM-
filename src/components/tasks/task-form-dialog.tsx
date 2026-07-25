@@ -36,6 +36,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TagPicker } from "@/components/tasks/tag-picker";
+import { TaskComments } from "@/components/tasks/task-comments";
+import { ROLE_LABELS } from "@/lib/permissions";
+import type { TeamMemberOption } from "@/lib/types";
 
 interface TaskFormDialogProps {
   open: boolean;
@@ -47,6 +50,7 @@ interface TaskFormDialogProps {
 }
 
 const NO_PROJECT = "__none__";
+const NO_ASSIGNEE = "__none__";
 
 export function TaskFormDialog({
   open,
@@ -57,6 +61,10 @@ export function TaskFormDialog({
   onSaved,
 }: TaskFormDialogProps) {
   const { data: projects } = useSWR<Project[]>("/api/projects", fetcher);
+  const { data: teamMembers } = useSWR<TeamMemberOption[]>(
+    "/api/team/members",
+    fetcher
+  );
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -65,6 +73,7 @@ export function TaskFormDialog({
   const [dueDate, setDueDate] = useState("");
   const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>("NONE");
   const [projectId, setProjectId] = useState<string>(NO_PROJECT);
+  const [assigneeId, setAssigneeId] = useState<string>(NO_ASSIGNEE);
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -78,6 +87,7 @@ export function TaskFormDialog({
       setDueDate(task.dueDate ? task.dueDate.slice(0, 10) : "");
       setRecurrenceRule(task.recurrenceRule);
       setProjectId(task.projectId ?? NO_PROJECT);
+      setAssigneeId(task.assigneeId ?? NO_ASSIGNEE);
       setTagIds(task.tags.map((t) => t.tag.id));
     } else {
       setTitle("");
@@ -87,6 +97,7 @@ export function TaskFormDialog({
       setDueDate("");
       setRecurrenceRule("NONE");
       setProjectId(defaultProjectId ?? NO_PROJECT);
+      setAssigneeId(NO_ASSIGNEE);
       setTagIds([]);
     }
   }, [open, task, defaultProjectId, defaultStatus]);
@@ -105,6 +116,7 @@ export function TaskFormDialog({
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         recurrenceRule,
         projectId: projectId === NO_PROJECT ? null : projectId,
+        assigneeId: assigneeId === NO_ASSIGNEE ? null : assigneeId,
         tagIds,
       };
 
@@ -257,9 +269,47 @@ export function TaskFormDialog({
           </div>
 
           <div className="space-y-2">
+            <Label>Assigned to</Label>
+            <Select
+              value={assigneeId}
+              onValueChange={(v) => setAssigneeId(v ?? NO_ASSIGNEE)}
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {(v: string) =>
+                    v === NO_ASSIGNEE
+                      ? "Unassigned"
+                      : (() => {
+                          const m = teamMembers?.find((tm) => tm.id === v);
+                          return m
+                            ? `${m.name ?? m.email} (${ROLE_LABELS[m.role]})`
+                            : v;
+                        })()
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_ASSIGNEE}>Unassigned</SelectItem>
+                {teamMembers?.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name ?? m.email} ({ROLE_LABELS[m.role]})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label>Tags</Label>
             <TagPicker selectedIds={tagIds} onChange={setTagIds} />
           </div>
+
+          {task && (
+            <div className="space-y-2">
+              <Label>Comments</Label>
+              <TaskComments taskId={task.id} />
+            </div>
+          )}
 
           <DialogFooter>
             <Button
