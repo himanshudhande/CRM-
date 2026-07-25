@@ -20,8 +20,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StaffFormDialog } from "@/components/team/staff-form-dialog";
+import { StaffEditDialog } from "@/components/team/staff-edit-dialog";
 import { ConfirmDelete } from "@/components/confirm-delete";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 
 export default function TeamPage() {
   const { data: session } = useSession();
@@ -34,6 +35,7 @@ export default function TeamPage() {
     fetcher
   );
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<TeamMember | null>(null);
 
   const isOwner = session?.user?.role === "OWNER";
 
@@ -110,17 +112,26 @@ export default function TeamPage() {
                       {formatDate(member.createdAt)}
                     </TableCell>
                     <TableCell>
-                      {member.role !== "OWNER" && (
-                        <ConfirmDelete
-                          title="Remove staff account?"
-                          description={`${member.name ?? member.email} will no longer be able to log in.`}
-                          onConfirm={() => handleDelete(member.id)}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditing(member)}
                         >
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </ConfirmDelete>
-                      )}
+                          <Pencil className="size-4" />
+                        </Button>
+                        {member.role !== "OWNER" && (
+                          <ConfirmDelete
+                            title="Remove staff account?"
+                            description={`${member.name ?? member.email} will no longer be able to log in.`}
+                            onConfirm={() => handleDelete(member.id)}
+                          >
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </ConfirmDelete>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -187,6 +198,11 @@ export default function TeamPage() {
       <StaffFormDialog
         open={creating}
         onOpenChange={setCreating}
+        onSaved={() => mutate()}
+      />
+      <StaffEditDialog
+        member={editing}
+        onOpenChange={(open) => !open && setEditing(null)}
         onSaved={() => mutate()}
       />
     </div>

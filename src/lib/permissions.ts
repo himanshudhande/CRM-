@@ -14,15 +14,17 @@ export const MODULES = [
 
 export type Module = (typeof MODULES)[number];
 
+const PRODUCTION_ROLES: UserRole[] = ["EDITOR", "GRAPHIC_DESIGNER", "CAMERAMAN"];
+
 const MODULE_ACCESS: Record<Module, UserRole[]> = {
-  dashboard: ["OWNER", "SOCIAL_MEDIA_MANAGER", "TASK_STAFF"],
-  tasks: ["OWNER", "SOCIAL_MEDIA_MANAGER", "TASK_STAFF"],
-  projects: ["OWNER", "SOCIAL_MEDIA_MANAGER"],
-  clients: ["OWNER", "SOCIAL_MEDIA_MANAGER"],
-  content: ["OWNER", "SOCIAL_MEDIA_MANAGER"],
+  dashboard: ["OWNER", "SOCIAL_MEDIA_MANAGER", "OPS_MANAGER", "TASK_STAFF", ...PRODUCTION_ROLES],
+  tasks: ["OWNER", "SOCIAL_MEDIA_MANAGER", "OPS_MANAGER", "TASK_STAFF", ...PRODUCTION_ROLES],
+  projects: ["OWNER", "SOCIAL_MEDIA_MANAGER", "OPS_MANAGER"],
+  clients: ["OWNER", "SOCIAL_MEDIA_MANAGER", "OPS_MANAGER"],
+  content: ["OWNER", "SOCIAL_MEDIA_MANAGER", "OPS_MANAGER", ...PRODUCTION_ROLES],
   finance: ["OWNER"],
-  reports: ["OWNER", "SOCIAL_MEDIA_MANAGER"],
-  portfolio: ["OWNER", "SOCIAL_MEDIA_MANAGER"],
+  reports: ["OWNER", "SOCIAL_MEDIA_MANAGER", "OPS_MANAGER"],
+  portfolio: ["OWNER", "SOCIAL_MEDIA_MANAGER", "OPS_MANAGER"],
   team: ["OWNER"],
 };
 
@@ -55,4 +57,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   STAFF: "Staff",
   SOCIAL_MEDIA_MANAGER: "Social Media Manager",
   TASK_STAFF: "Task Staff",
+  OPS_MANAGER: "Ops Manager",
+  EDITOR: "Editor",
+  GRAPHIC_DESIGNER: "Graphic Designer",
+  CAMERAMAN: "Cameraman",
 };

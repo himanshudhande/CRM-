@@ -47,6 +47,10 @@ enum UserRole {
   STAFF
   SOCIAL_MEDIA_MANAGER
   TASK_STAFF
+  OPS_MANAGER
+  EDITOR
+  GRAPHIC_DESIGNER
+  CAMERAMAN
 }
 
 enum ContentPlatform {

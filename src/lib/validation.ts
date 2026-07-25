@@ -154,11 +154,29 @@ export const expenseEntryInputSchema = z.object({
 
 export const expenseEntryUpdateSchema = expenseEntryInputSchema.partial();
 
-export const staffRoleValues = ["SOCIAL_MEDIA_MANAGER", "TASK_STAFF"] as const;
+export const staffRoleValues = [
+  "SOCIAL_MEDIA_MANAGER",
+  "TASK_STAFF",
+  "OPS_MANAGER",
+  "EDITOR",
+  "GRAPHIC_DESIGNER",
+  "CAMERAMAN",
+] as const;
 
 export const staffInputSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(staffRoleValues).default("SOCIAL_MEDIA_MANAGER"),
+});
+
+export const staffEditSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100).optional(),
+  email: z.string().email().optional(),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .optional()
+    .or(z.literal("")),
+  role: z.enum(staffRoleValues).optional(),
 });

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/fetcher";
+import { TeamMember } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +28,12 @@ import {
   type StaffRole,
 } from "@/lib/staff-roles";
 
-export function StaffFormDialog({
-  open,
+export function StaffEditDialog({
+  member,
   onOpenChange,
   onSaved,
 }: {
-  open: boolean;
+  member: TeamMember | null;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
@@ -42,27 +43,30 @@ export function StaffFormDialog({
   const [role, setRole] = useState<StaffRole>("SOCIAL_MEDIA_MANAGER");
   const [saving, setSaving] = useState(false);
 
+  const isOwnerTarget = member?.role === "OWNER";
+
   useEffect(() => {
-    if (!open) return;
-    setName("");
-    setEmail("");
+    if (!member) return;
+    setName(member.name ?? "");
+    setEmail(member.email);
     setPassword("");
-    setRole("SOCIAL_MEDIA_MANAGER");
-  }, [open]);
+    if (member.role !== "OWNER") setRole(member.role as StaffRole);
+  }, [member]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || password.length < 8) return;
+    if (!member || !name.trim() || !email.trim()) return;
+    if (password && password.length < 8) return;
 
     setSaving(true);
     try {
-      await apiRequest("/api/team", "POST", {
+      await apiRequest(`/api/team/${member.id}`, "PATCH", {
         name: name.trim(),
         email: email.trim(),
-        password,
-        role,
+        ...(password ? { password } : {}),
+        ...(isOwnerTarget ? {} : { role }),
       });
-      toast.success("Staff account created");
+      toast.success("Account updated");
       onSaved();
       onOpenChange(false);
     } catch (err) {
@@ -73,16 +77,16 @@ export function StaffFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={!!member} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Add staff member</DialogTitle>
+          <DialogTitle>Edit account</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="edit-name">Name</Label>
             <Input
-              id="name"
+              id="edit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -91,9 +95,9 @@ export function StaffFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="edit-email">Email</Label>
             <Input
-              id="email"
+              id="edit-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -102,41 +106,45 @@ export function StaffFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="edit-password">New password</Label>
             <Input
-              id="password"
+              id="edit-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
               minLength={8}
+              placeholder="Leave blank to keep current password"
             />
             <p className="text-xs text-muted-foreground">
-              At least 8 characters.
+              Leave blank to keep the existing password.
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Role</Label>
-            <Select
-              value={role}
-              onValueChange={(v) => setRole((v ?? "SOCIAL_MEDIA_MANAGER") as StaffRole)}
-            >
-              <SelectTrigger>
-                <SelectValue>{(v: StaffRole) => ROLE_LABELS[v]}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {STAFF_ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {ROLE_LABELS[r]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              {STAFF_ROLE_DESCRIPTIONS[role]}
-            </p>
-          </div>
+          {!isOwnerTarget && (
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select
+                value={role}
+                onValueChange={(v) =>
+                  setRole((v ?? "SOCIAL_MEDIA_MANAGER") as StaffRole)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue>{(v: StaffRole) => ROLE_LABELS[v]}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {STAFF_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {STAFF_ROLE_DESCRIPTIONS[role]}
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button
@@ -147,7 +155,7 @@ export function StaffFormDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Creating…" : "Create account"}
+              {saving ? "Saving…" : "Save changes"}
             </Button>
           </DialogFooter>
         </form>

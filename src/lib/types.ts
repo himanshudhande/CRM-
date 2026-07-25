@@ -2,7 +2,11 @@ export type UserRole =
   | "OWNER"
   | "STAFF"
   | "SOCIAL_MEDIA_MANAGER"
-  | "TASK_STAFF";
+  | "TASK_STAFF"
+  | "OPS_MANAGER"
+  | "EDITOR"
+  | "GRAPHIC_DESIGNER"
+  | "CAMERAMAN";
 
 export interface TeamMember {
   id: string;
